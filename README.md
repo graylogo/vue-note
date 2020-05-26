@@ -127,6 +127,14 @@ data: {
 2. 事件函数要写成普通函数，这样才可以用this
    - 综述： 在template中，直接修改，在script中，使用this.xxx来修改
 
+#### 修改data中的数组
+
+> 有时候数组的更改不能触发视图的更新
+
+- 数据是一个对象，更新时，给对象添加新的属性，不能触发视图的更新（但是数据实际时更新了），解决办法：重新赋值一个新的对象（直接把对象修改了）
+- 使用`$set()`方法` $set(obj,"age",10)`添加age=10这一条属性
+- 数据是对象数组，给该对象新增属性
+
 #### 事件绑定（监听）
 
 `v-on`，简写@  `@click="函数或者函数内的内容"`
@@ -150,7 +158,7 @@ data: {
 
 `<input type = "text" :value='value'/>`
 
-1. 写上`@change = 'handleInput'`，change是在失去焦点的时候触发的（不是事实的）
+1. 写上`@change = 'handleInput'`，change是在失去焦点的时候触发的（不是时实的）
 
 2. ` @input='handleInput'`事件是实时改变的
 3. `v-model = 'value'`： 替换监听函数和默认值  **推荐**
@@ -188,6 +196,8 @@ data: {
 
 #### 修饰符
 
+.sync 将props变为双向绑定，可以支持子组件修改父组件prop
+
 ##### 事件修饰符 (v-on)
 
 - `.stop` 阻止事件冒泡
@@ -220,7 +230,7 @@ data: {
 
 #### 计算属性
 
-> 由于计算属性存在缓存，不是每一次都会执行，所以比方法好
+> 由于计算属性存在缓存，不是每一次都会执行，所以比方法好（计算属性是特定的一个属性，不能传参）
 >
 > 计算属性是依赖缓存的，一个计算属性所依赖的数据发生变化时，才会重新取值，所以只要内容不变，计算属性也就不会跟新；
 >
@@ -257,6 +267,31 @@ computed:{
 }
 ```
 
+#### 过滤器
+
+类似过滤器
+
+```js
+filters: {   //在导出对象中
+  capitalize: function (value) {
+    if (!value) return ''
+    value = value.toString()
+    return value.charAt(0).toUpperCase() + value.slice(1) //将首字母大写
+  }}
+<!-- 在双花括号中使用 -->
+{{ message | capitalize }}
+<!-- 在 `v-bind` 中使用 -->
+<div v-bind:id="rawId | formatId"></div>
+//全局过滤器
+Vue.filter('capitalize', function (value) {
+  if (!value) return ''
+  value = value.toString()
+  return value.charAt(0).toUpperCase() + value.slice(1)
+})
+```
+
+
+
 #### 侦听器
 
 `watch:{}`也是导出列表下的一个属性，监听组件内的data或者props变化，从而控制另外的data
@@ -274,8 +309,6 @@ computed需要写返回值，而异步操作设置返回值不能同步执行，
 
 #### 指令v-
 
-
-
 |     指令      | 功能                                                         |               示例               | 备注 | 备注   |
 | :-----------: | :----------------------------------------------------------- | :------------------------------: | :--: | ------ |
 |    v-bind     | 在template中写vue语法，绑定数据                              |        v-bind:title="msg"        |  ：  |        |
@@ -284,11 +317,32 @@ computed需要写返回值，而异步操作设置返回值不能同步执行，
 |     v-on      | 绑定事件（可以使用各种修饰符）                               | v-on:click="say('参数', $event)" |  @   |        |
 |    v-model    | 在表单元素上创建双向数据绑定                                 | <input type="text" v-model="a"/> |      |        |
 |     v-for     | 基于源数据多次渲染元素或模板块                               |                                  |      |        |
-| v-if & v-show | v-if：销毁或重建元素  v-show：根据表达式之真假值，切换元素的 display CSS 属性 |                                  |      |        |
+| v-if & v-show | v-if：销毁或重建元素  v-show：根据表达式之真假值，切换元素的 display CSS 属性 |               区别               |      |        |
 |     v-pre     | 跳过这个元素和它的子元素的编译过程                           |       <p v-pre>{{Arr}}</p>       |      |        |
 |    v-once     | 只渲染元素和组件一次。                                       |                                  |      |        |
 |    v-cloak    | 这个指令保持在元素上直到关联实例结束编译                     |                                  |      | 还没学 |
 |    v-slot     | 插槽，传递children用的                                       |          <a v-slot:msg>          |  #   |        |
+
+v-if从出现到消失的生命周期
+
+v-if从小事到出现的生命周期
+
+v-show不产生生命周期
+
+#### 自定义指令
+
+全局指令
+
+````js
+// 注册一个全局自定义指令 `v-focus`
+Vue.directive('focus', {
+  // 当被绑定的元素插入到 DOM 中时……
+  inserted: function (el) {
+    // 聚焦元素
+    el.focus()}})
+````
+
+局部指令
 
 ### 数据传递
 
@@ -324,7 +378,7 @@ props:{
 >
 > 自定义事件是父组件向子组件传递函数
 
-接收： 在template中，使用`$emit('事件名')`接收；在script中，使用`this.$emit('事件名')`接收
+接收： 在template中，使用`$emit('事件名','参数')`接收；在script中，使用`this.$emit('事件名')`接收
 
 ```js
 <Button :text="num" color="red" @add = 'add'/>  //template中
@@ -333,7 +387,11 @@ props:{
       this.num++
     }}} //在子组件中接收：
 <button :style="{color: color}" @click="$emit('add')">{{text}}</button>
+//在methods中，使用this.$emit('add')接收
 ```
+
+- 在事件函数里（绑定各种事件的函数）可以用事件函数 $event...  必须在绑定的部分才能用，要在methods里使用的话，在上面和下面都传&event
+- $emit() 自定义事件传参会存在问题，传多次的时候无法正确获取到参数。因为传递的时候直接将执行了的函数装到另外一个函数里面，所以要在第一次传递的时候就需要传参
 
 综述：父组件给子组件传参，可以使用prop和自定义事件，定义方式不同，用法基本一样。
 
@@ -357,8 +415,354 @@ props:{
 <slot name="msg"></slot>   //子组件接收具名插槽
 ```
 
+#### 动态组件
+
+`keep-alive` 失活的组件将会被缓存,被记住状态
+
+```js
+<keep-alive>
+  <component v-bind:is="currentTabComponent"></component>
+</keep-alive>
+//在一个多标签的界面中使用 :is attribute 来切换不同的组件：
+<component v-bind:is="currentTabComponent"></component>
+在data中： currentTabComponent:'标签名'
+在点击事件中，修改currentTabComponen="另外一个标签名"
+```
+
+注意：动态组件的is相当于v-if，但是它有缓存
+
+is的用法在脚手架中用不了？？？
 
 
-### 冷知识
 
-`$nextTick`用来知道什么时候DOM更新完成
+### 生命周期
+
+mounted
+
+```js
+created(){//实例创建完成，初始化事件和数据完毕}  改数据
+mounted() {//初始挂载，在浏览器中出现组件的页面结构}
+updated(){//更新data或者prop，并且页面渲染完毕}
+```
+
+<img src="https://tva1.sinaimg.cn/large/007S8ZIlgy1gebmnzb4mqj30u023ztaj.jpg" style="zoom:35%;" />
+
+### 动画
+
+Vue 在插入、更新或者移除 DOM 时，提供多种不同方式的应用过渡效果。包括以下工具：
+
+- 在 CSS 过渡和动画中自动应用 class
+- 可以配合使用第三方 CSS 动画库，如 Animate.css
+- 在过渡钩子函数中使用 JavaScript 直接操作 DOM
+- 可以配合使用第三方 JavaScript 动画库，如 Velocity.js
+
+vue内置了translation组件来实现组件的动画过渡和动画效果：
+
+1. 用translation标签包裹动画组件
+
+   ```js
+   <transition name="fade">  //加入appear后初始的时候会执行（当然也可以自定义）
+     <p v-if="show">hello</p>
+   </transition>
+   ```
+
+2. 在style里面设置动画
+
+   ```css
+   .fade-enter-active, .fade-leave-active { //xxx-enter-active 出现的过程  xxx代表上面的name
+     transition: opacity .5s;}
+   .fade-enter, .fade-leave-to  {
+     opacity: 0;} //xxx-enter出现的第一祯		xxx-enter-to出现结束的最后一帧
+   ```
+
+3. 如果元素默认是出现的，则消失的第一祯和出现的最后一帧不需要再写了；
+
+   反之，如果默认消失，则出现的第一祯和消失的最后一帧不需要设置。
+
+4. 动画
+
+   ```css
+   .bounce-enter-active {
+    animation: bounce-in .5s;}//:duration="{ enter: 500, leave: 800 }"可以在template里设置时间
+   .bounce-leave-active {
+     animation: bounce-in .5s reverse;}  //reverse 反向
+   @keyframes bounce-in {
+     0% {transform: scale(0);}
+     50% {transform: scale(1.5);}
+     100% {transform: scale(1);}}
+   ```
+
+### 获取焦点（补全）
+
+- `$nextTick`用来知道什么时候DOM更新完成
+- 通过ref获取真实DOM节点
+- 获取焦点的时候用settimeout 0 来改成异步的
+
+- document.activrElement   激活状态下的元素，例如选中的checkbox，获得焦点的input
+
+### Axios请求
+
+vue引入组件的三种方式：
+
+1. 在否个组件中引入并使用
+
+2. 使用vue.use方法将该插件当成全局插件，在每个组件中都能用（在main.js）中使用
+
+   ```js
+   npm i axios vue-axios  //装包
+   import axios from 'axios';  //在main.js中导入并设置为全局
+   import Vueaxios from 'vue-axios'
+   Vue.use(Vueaxios,axios) //设置为全局
+   this.axios.get(api).then((response) => { //在组件中使用
+     console.log(response.data)})
+   ```
+
+3. 假如导入的第三方插件不是组件形式的，可以使用Vue.prototype将该插件定义成全局变量（在main.js中），`Vue.prototype.axios=axios`在组件内可以使用this.xxx来访问
+
+> 使用axios发送请求  还有vue-axios
+
+在created生命周期发送请求拿数据
+
+并发请求，使用`axios.all`和`spread`来解决
+
+```js
+axios.all([searchTopic(), searchs()])
+  .then(axios.spread(function (allSearchTopic, allSearchs) { //可以用箭头函数
+    debugger//打印可以拿到所有的返回值
+    allSearchTopic == 方法一的返回值
+    allSearchs == 方法二的返回值
+  }));
+```
+
+判断输入内容发送请求，使用`if(Val.trim()){...}`来请求
+
+- 空对象使用null来定义，空数组用[]来定义，用.length来判断是否为空
+
+### 路由
+
+> 使用vue-router 
+
+1. 安装： `npm install vue-router`
+
+2. 创建路由：
+
+```js
+import Vue from 'vue'
+import VueRouter from 'vue-router'
+Vue.use(VueRouter)
+1. 定义
+const routes=[
+  {path:'/',component:PostList},
+  {path:'/post',component:Post}
+]
+2. 实例化
+const router = new VueRouter({ //可以添加路由模式
+  routes,
+  mode:'history' 	//默认为hash模式
+})
+export default router  //注意：导出的名字为router，不然在main.js中使用的时候需要用router:xxx
+3. 挂载在main.js中
+const app = new Vue({
+  router
+}).$mount('#app')
+```
+
+3. 使用路由：
+
+- 展示路由页面需要`router-view`来展示使用<router-view></router-view>来展示
+
+- 使用<router-link to="/foo">Go </router-link> 来实现跳转
+  - `router-link`是包含匹配，可以加exact变为严格匹配
+  - `active-class` 链接和地址栏匹配时候激活的样式
+  - `exact-active-class` 链接被精准匹配时激活的样式
+
+- 动态路由：`{path:'/post/:id',component:Post},`用冒号区分
+
+- 获取地址栏信息 由于路由已经是全局配置了，所以用`this.$route`获取当前页面路由信息
+
+- 路由默认的匹配是严格匹配，只能匹配一个，所以需要用到嵌套路由：
+
+```html
+to的内容也可以写成一个对象
+<router-link :to="'home'">Home</router-link>  //普通写法
+<!-- 命名的路由 -->
+<router-link :to="{ name: 'user', params: { userId: 123 }}">User</router-link>
+<!-- 带查询参数，下面的结果为 /register?plan=private -->
+<router-link :to="{ path: 'register', query: { plan: 'private' }}"
+  >Register</router-link
+>
+```
+
+- 路由嵌套：子页面需要在父级页面对象内设置，使用`children`属性来设置，这是一个数组，里面包含对象，最后需要在父页面的页面结构中设置在哪里显示，使用`router-view`
+
+- 404 ，使用*来匹配所有页面，
+- 返回：` <button @click="$router.back()">back</button>` 同样，push也在$router中proto的push里
+
+### ElementUI
+
+1. 安装：`npm i element-ui`但是现在使用的是`vue add element`选择按需导入
+
+2. 按需加载原理：在`bable.config.js`中配置了按需引入，在plugs文件夹下`element.js`中全局配置了。
+
+3. 图形化界面安装 `vue ui`默认在8000端口打开，
+
+4. 动画：
+
+   - 动画的执行是异步的，要在刷新以后第一次执行动画，在mounted周期里面写上settimeout改成异步
+   - 或者使用`setInterval`来生成。`setInterval`的使用：const一个变量等于setInterval函数，在函数里判断停止条件，使用`clearInterval(const的变量)`跳出计数器
+
+5. 自定义主题：在线配置，然后下载zip包，解压以后是一个theme文件夹，放大src文件夹下，在
+
+   如果是搭配 `babel-plugin-component` 一起使用，只需要修改 `.babelrc` 的配置，指定 `styleLibraryName` 路径为自定义主题相对于 `.babelrc` 的路径，注意要加 `~`。
+
+   ```json
+   {
+     "plugins": [
+       [
+         "component",
+         {
+           "libraryName": "element-ui",
+           "styleLibraryName": "~theme"
+         }
+       ]
+     ]
+   }
+   ```
+
+### 混入Mixin
+
+全局：注册以后每个组件都使用
+
+局部：需要的时候在导出中定义： mixin:[xxx]
+
+
+
+指令传参
+
+混入 (mixin) 提供了一种非常灵活的方式，来分发 Vue 组件中的可复用功能。一个混入对象可以包含任意组件选项。当组件使用混入对象时，所有混入对象的选项将被“混合”进入该组件本身的选项。
+
+
+
+注意：mixin并不是全局的，当导入mixin以后，里面的内容作用域仅在这个组件，修改了以后导入其他组件的内容并不会改变。
+
+
+
+用来做登录认证
+
+### 组件注册
+
+在模块系统下（clil搭建的环境）：
+
+````js
+ name: 'HelloWorld',  //局部注册：
+components: {   
+    HelloWorld
+  }
+//在main.js中（也可以新建个js，专门用来注册）
+Vue.component("name",被注册组件) //全局注册  name表示使用组件时的标签名
+````
+
+
+
+### 其他
+
+移动端事件：
+
+原生：`ontouchstart` `ontouchend` `ontouchmove` `ontouchcancle`
+
+### vuex
+
+每一个 Vuex 应用的核心就是 store（仓库）。“store”基本上就是一个容器，它包含着你的应用中大部分的**状态 (state)**。
+
+改变 store 中的状态的唯一途径就是显式地**提交 (commit) mutation**。
+
+过程：
+
+创建store：导入vue和vuex，然后`Vue.use(Vuex)`
+
+最后在根结点注入store，把store的所有内容加入页面
+
+```vue
+const store = new Vue.Store({
+	state:{
+		count:0
+},
+	mutations:{   //提供修改state的方法
+	add(state){
+		state.count++
+}
+}
+})
+```
+
+导出：` export default store`
+
+在main.js中全局使用 store:store
+
+在子组件中使用数据： this.$store.state
+
+在子组件中使用方法： $store.commit('add')
+
+`mapState`辅助函数
+
+当一个组件需要获取多个状态的时候，将这些状态都声明为计算属性会有些重复和冗余。为了解决这个问题，我们可以使用 `mapState` 辅助函数帮助我们生成计算属性，让你少按几次键：
+
+```js
+import { mapState } from 'vuex'  //导入
+
+export default {
+  computed: mapState({
+    //1. 箭头函数可使代码更简练
+    count: state => state.count,
+    //2. 简写 传字符串参数 'count' 等同于 `state => state.count`
+    countAlias: 'count',
+    //3/ 普通函数，为了能够使用 `this` 获取局部状态，必须使用常规函数
+    countPlusLocalState (state) {
+      return state.count + this.localCount
+    }
+  })
+}
+```
+
+  当映射的计算属性的名称与 state 的子节点名称相同时，我们也可以给 `mapState` 传一个字符串数组。
+
+```js
+computed: mapState([     //写成数组（全都是第二种写法的简写）
+  // 4. 	映射 this.count 为 store.state.count
+  'count'
+]) 
+```
+
+当本组件也需要用到加计算属性computed的时候，使用**对象展开运算符**，因为mapState函数返回的是一个对象
+
+```js
+computed: {
+  localComputed () { /* ... */ },
+  // 使用对象展开运算符将此对象混入到外部对象中
+  ...mapState({
+    // ...
+  })
+}
+```
+
+#### Mutation
+
+##### 提交载荷（Payload）
+
+在大多数情况下，载荷应该是一个对象，这样可以包含多个字段并且记录的 mutation 会更易读：
+
+```js
+// ...
+mutations: {
+  increment (state, payload) {
+    state.count += payload.amount
+  }
+}
+store.commit('increment', {
+  amount: 10
+})
+```
+
+##### 对象风格的提交方式
+
+Mutation必须是同步的，异步不能写在mutation里面
